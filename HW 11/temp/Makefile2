@@ -1,0 +1,27 @@
+CC=gcc
+
+CFLAGS=-c -static -Wall
+
+
+all: hw11-A-MaezyHaldeman.o hw11-B-MaezyHaldeman.o hw11-C-MaezyHaldeman.o hw11-D-MaezyHaldeman.o hw11-lib-MaezyHaldeman.a
+	$(CC) -static hw11-MaezyHaldeman.c -lm hw11-lib-MaezyHaldeman.a -o myProg
+
+hw11-A-MaezyHaldeman.o: hw11-A-MaezyHaldeman.c
+	$(CC) $(CFLAGS) hw11-A-MaezyHaldeman.c
+
+hw11-B-MaezyHaldeman.o: hw11-B-MaezyHaldeman.c
+	$(CC) $(CFLAGS) hw11-B-MaezyHaldeman.c
+
+hw11-C-MaezyHaldeman.o: hw11-C-MaezyHaldeman.c
+	$(CC) $(CFLAGS) hw11-C-MaezyHaldeman.c
+
+hw11-D-MaezyHaldeman.o: hw11-D-MaezyHaldeman.c
+	$(CC) $(CFLAGS) hw11-D-MaezyHaldeman.c
+
+hw11-lib-MaezyHaldeman.a: hw11-A-MaezyHaldeman.o hw11-B-MaezyHaldeman.o hw11-C-MaezyHaldeman.o hw11-D-MaezyHaldeman.o
+	ar rcs hw11-lib-MaezyHaldeman.a hw11-A-MaezyHaldeman.o hw11-B-MaezyHaldeman.o hw11-C-MaezyHaldeman.o hw11-D-MaezyHaldeman.o
+
+clean:
+	rm -rf *.o myProg hw11-lib-MaezyHaldeman.a hw11-MaezyHaldeman
+
+

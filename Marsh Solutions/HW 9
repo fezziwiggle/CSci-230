@@ -1,0 +1,178 @@
+#include<stdlib.h> 
+#include<stdio.h> 
+
+struct myTree { 
+   int value; 
+   struct myTree *right, *left; 
+}; 
+
+struct myList {
+   struct myList *next;
+   struct myTree *tree;
+};
+
+typedef struct myTree _tree; 
+typedef struct myList _list; 
+
+/************************************************/
+/* Sort data.			                        */
+/************************************************/
+void BUBBLE_SORT(int array[], int count) {    
+int i, j;
+int swap;
+  for (j = 0; j < count-1; j++) {
+      for (i = 0; i < count-j-1; i++) {
+          if (array[i] > array[i+1]) {
+             swap       = array[i];
+             array[i]   = array[i+1];
+             array[i+1] = swap;
+          }
+      }
+  }
+}
+
+/************************************************/
+/* Resort data for binary tree.			        */
+/************************************************/
+void DATA_PARSE(int input[], int first, int last, int output[]) {
+int middle;
+static int count = 0;
+  if (first > last) return;
+  middle = (first + last) / 2;
+  output[count] = input[middle];
+  count++;
+  DATA_PARSE(input, first, middle-1, output);
+  DATA_PARSE(input, middle+1, last, output);
+}
+
+/************************************************/
+/* Insert into binary tree.			            */
+/************************************************/
+void TREE_INSERT(_tree *(*tree), _tree *item) { 
+  if (!(*tree)) { 
+     *tree = item;
+     return; 
+  } 
+  if (item->value < (*tree)->value)      TREE_INSERT(&(*tree)->left, item); 
+  else if (item->value > (*tree)->value) TREE_INSERT(&(*tree)->right, item); 
+} 
+
+/************************************************/
+/* Pre-order tree traversal.			        */
+/************************************************/
+void PRE_TRAVERSE(_tree *tree) { 
+  printf("%d ",tree->value); 
+  if (tree->left != NULL) PRE_TRAVERSE(tree->left); 
+  if (tree->right != NULL) PRE_TRAVERSE(tree->right); 
+} 
+
+/************************************************/
+/* In-order tree traversal.			            */
+/************************************************/
+void IN_TRAVERSE(_tree *tree) { 
+  if (tree->left != NULL) IN_TRAVERSE(tree->left); 
+  printf("%d ",tree->value); 
+  if (tree->right != NULL) IN_TRAVERSE(tree->right); 
+} 
+
+/************************************************/
+/* Post-order tree traversal.			        */
+/************************************************/
+void POST_TRAVERSE(_tree *tree) { 
+  if (tree->left != NULL) POST_TRAVERSE(tree->left); 
+  if (tree->right != NULL) POST_TRAVERSE(tree->right); 
+  printf("%d ",tree->value); 
+} 
+
+/************************************************/
+/* Linked list traversal.			            */
+/************************************************/
+void LIST_TRAVERSE(_list *head) { 
+_list *current;
+  current = head;
+  while (current != NULL) {
+     printf("%d ",current->tree->value); 
+     current = current->next;
+  }
+} 
+
+/************************************************/
+/* Linked list & tree free.			            */
+/************************************************/
+void FREE(_list *head) { 
+_list *current, *temp;
+  current = head;
+  while (current != NULL) {
+     temp    = current;
+     current = current->next;
+     free(temp->tree);
+     free(temp);
+  }
+} 
+
+/************************************************/
+/* Main.					                    */
+/************************************************/
+int main(void) { 
+int i, data, count;
+FILE *stream;
+int *original, *resorted;
+_tree *current, *root; 
+_list *pointer, *head;
+  root = NULL; 
+  head = NULL;
+  // See how big data file is.
+  count = 0;
+  stream = fopen("hw9.data", "r");
+  while (1) {
+      fscanf(stream, "%d", &data);
+      if (feof(stream)) break;
+      count++;
+  }
+  // Create dynamic array for data.
+  original = (int*)calloc(count, sizeof(int));
+  // Reload data into dynamic array.
+  rewind(stream);
+  for (i = 0; i < count; i++) {
+      fscanf(stream, "%d", &original[i]);
+  }
+  fclose(stream);
+  // Sort data.
+  BUBBLE_SORT(original, count);   
+  // Create dynamic array for resorted data.
+  resorted = (int*)calloc(count, sizeof(int));
+  DATA_PARSE(original, 0, count, resorted);
+  // Just a test to see if sorts are working...
+  for (i = 0; i < count; i++) {
+      printf("%d %d\n", original[i], resorted[i]);
+  }
+  // Free first dynamic array.
+  free(original);
+  // Build the tree and linked list.
+  for (i = 0; i < count; i++) {
+      // Here we build the tree as normal.
+      current = (_tree *)malloc(sizeof(_tree)); 
+      current->left = current->right = NULL; 
+      current->value = resorted[i]; 
+      TREE_INSERT(&root, current);
+      // Here we build a linked list and point each node to a leaf in the tree.
+      pointer = (_list *)malloc(sizeof(_list)); 
+      pointer->tree = current;
+      pointer->next = head;
+      head    = pointer;
+  } 
+
+  // Tree traversals.
+  printf("Pre order:\t");
+  PRE_TRAVERSE(root); 
+  printf("\nIn order:\t");
+  IN_TRAVERSE(root); 
+  printf("\nPost order:\t");
+  POST_TRAVERSE(root); 
+  // Linked list traversal.
+  printf("\nLinked list:\t");
+  LIST_TRAVERSE(head);
+  printf("\n");
+  FREE(head);
+} 
+

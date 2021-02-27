@@ -1,0 +1,25 @@
+CC=gcc
+
+CFLAGS=-c -Wall
+
+
+all: hw5-MaezyHaldeman.o hw5-A-MaezyHaldeman.o hw5-B-MaezyHaldeman.o hw5-C-MaezyHaldeman.o hw5-D-MaezyHaldeman.o
+	$(CC) hw5-MaezyHaldeman.o hw5-A-MaezyHaldeman.o hw5-B-MaezyHaldeman.o hw5-C-MaezyHaldeman.o hw5-D-MaezyHaldeman.o -o myProg
+
+hw5-MaezyHaldeman.o: hw5-MaezyHaldeman.c
+	$(CC) $(CFLAGS) hw5-MaezyHaldeman.c
+
+hw5-A-MaezyHaldeman.o: hw5-A-MaezyHaldeman.c
+	$(CC) $(CFLAGS) hw5-A-MaezyHaldeman.c
+
+hw5-B-MaezyHaldeman.o: hw5-B-MaezyHaldeman.c
+	$(CC) $(CFLAGS) hw5-B-MaezyHaldeman.c
+
+hw5-C-MaezyHaldeman.o: hw5-C-MaezyHaldeman.c
+	$(CC) $(CFLAGS) hw5-C-MaezyHaldeman.c
+
+hw5-D-MaezyHaldeman.o: hw5-D-MaezyHaldeman.c
+	$(CC) $(CFLAGS) hw5-D-MaezyHaldeman.c
+
+clean:
+	rm -rf *.o myProg

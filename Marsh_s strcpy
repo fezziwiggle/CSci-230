@@ -1,0 +1,14 @@
+/********************************************************/
+/* My strNcpy.                                          */
+/********************************************************/
+
+void strNcpy(char dst[], char src[], int count) {
+int i;
+printf("test\t");
+   for (i = 0; i < count; i++) {
+       dst[i] = src[i];
+       if (dst[i] == '\0') return;
+   }
+   dst[--i] = '\0';
+}
+

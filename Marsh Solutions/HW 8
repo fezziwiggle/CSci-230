@@ -1,0 +1,261 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+// Poem linked list definition.
+struct poem {
+   char *word;
+   struct poem *next;
+};
+typedef struct poem pLink;	// Saves me typing later.
+
+// Codex linked list definition.
+struct codex {
+   char *word1;
+   char *word2;
+   struct codex *next;
+};
+typedef struct codex cLink;	// Saves me typing later.
+
+/********************************************************/
+/* INSERT INTO POEM LINKED-LIST.                        */
+/********************************************************/
+void LIST_INSERT_POEM(pLink *(*head), char *word) {
+pLink *current, *temp;
+    current = (pLink *)malloc(sizeof(pLink));					    // Make a new link.
+    current->word = (char*)calloc(strlen(word)+1, sizeof(char));		// Allocate space for the word.
+    strcpy(current->word, word);
+    if ((*head) == NULL) {											// Is it the first link?
+       (*head) = current;
+    } else {														// Let's traverse to find end.
+       temp = (*head);
+       while (temp->next != NULL) temp = temp->next;
+       temp->next  = current;										// Insert at end.
+    }
+    current->next = NULL;   
+}
+
+/********************************************************/
+/* INSERT INTO CODEX LINKED-LIST.                       */
+/********************************************************/
+void LIST_INSERT_CODEX(cLink *(*head), char *word1, char *word2) {
+cLink *current, *temp;
+    current = (cLink *)malloc(sizeof(cLink));						// Make a new link.
+    current->word1 = (char*)calloc(strlen(word1)+1, sizeof(char));	// Allocate space for the word.
+    current->word2 = (char*)calloc(strlen(word2)+1, sizeof(char));	// Allocate space for the word.
+    strcpy(current->word1, word1);
+    strcpy(current->word2, word2);
+    if ((*head) == NULL) {											// Is it the first link?
+       (*head) = current;
+    } else {														// Let's traverse to find end.
+       temp = (*head);
+       while (temp->next != NULL) temp = temp->next;
+       temp->next  = current;										// Insert at end.
+    }
+    current->next  = NULL;  
+}
+
+/********************************************************/
+/* CORRECT POEM LINKED-LIST.                            */
+/* Notes - Remember, in order to delete a node we need  */
+/* to look 1 node ahead. Also, removal of the first node*/
+/* requires a special case.                             */
+/********************************************************/
+void LIST_CORRECT(pLink *(*headP), cLink *headC) {
+pLink *poem, *obsolete, *new;
+cLink *codx;
+    poem = (*headP);
+    // Testing first node (special case).
+    codx = headC;
+    while (codx != NULL) {											// Loop through codex linked list.
+       if (!strcmp(poem->word, codx->word1)) {				// Does next word match.
+          if (!strncmp(codx->word2, "skip", 4)) {   				// Test for "skip" (where we remove the word).
+             obsolete   = poem;					
+             (*headP)   = poem->next;							// Delete word from poem.
+             free(obsolete);
+          } else {
+             new = (pLink *)malloc(sizeof(pLink));					// Make a new link.
+																	// Allocate space for the new word.
+             new->word  = (char*)calloc(strlen(codx->word2)+1, sizeof(char));
+             strcpy(new->word, codx->word2);
+             obsolete   = poem;					
+             (*headP)   = new;										// Replace old link from poem.
+             new->next  = poem->next;
+             free(obsolete);
+          }
+          break;													// Fixed word, skip to next word in poem.
+       }
+       codx = codx->next;
+    } 
+    poem = poem->next; 
+    // Testing remainder of list (looking 1 node ahead).
+    while (poem->next != NULL) {									// Loop through poem linked list.
+       codx = headC;
+       while (codx != NULL) {										// Loop through codex linked list.
+          if (!strcmp(poem->next->word, codx->word1)) {				// Does next word match.
+             if (!strncmp(codx->word2, "skip", 4)) {   				// Test for "skip" (where we remove the word).
+                obsolete   = poem->next;					
+                poem->next = poem->next->next;						// Delete word from poem.
+                free(obsolete);
+             } else {
+                new = (pLink *)malloc(sizeof(pLink));				// Make a new link.
+																	// Allocate space for the new word.
+                new->word  = (char*)calloc(strlen(codx->word2)+1, sizeof(char));
+                strcpy(new->word, codx->word2);
+                obsolete   = poem->next;					
+                poem->next = new;									// Replace old link from poem.
+                new->next  = obsolete->next;
+                free(obsolete);
+             }
+             break;													// Fixed word, skip to next word in poem.
+          }
+          codx = codx->next;
+       } 
+       poem = poem->next; 
+    }
+}
+
+/********************************************************/
+/* DISPLAY LINKED-LIST.                                 */
+/********************************************************/
+void LIST_DISPLAY(pLink *headP) {
+int newLine;
+pLink *current;
+    current = headP;
+    newLine = 0;
+    while (current != NULL) {
+       if (ispunct(current->word[0])) {
+          printf("%s\n", current->word);
+          newLine = 1;
+       } else {
+          printf("%s", current->word);
+          newLine = 0;
+       }
+       if (newLine == 0 && !ispunct(current->next->word[0])) printf(" ");
+       current = current->next;
+    }
+}
+
+/********************************************************/
+/* FREE POEM LINKED-LIST.                               */
+/********************************************************/
+void LIST_FREE_POEM(pLink *head) {
+pLink *current, *last;
+    current = head;
+    last    = head;
+    while (current != NULL) {
+       current = current->next;
+       free(last);
+       last = current;
+    }
+    head = NULL;	// Prevent dangling pointer.
+}
+
+/********************************************************/
+/* FREE CODEX LINKED-LIST.                              */
+/********************************************************/
+void LIST_FREE_CODEX(cLink *head) {
+cLink *current, *last;
+    current = head;
+    last    = head;
+    while (current != NULL) {
+       current = current->next;
+       free(last);
+       last = current;
+    }
+    head = NULL;	// Prevent dangling pointer.
+}
+
+/********************************************************/
+/* MAIN                                                 */
+/********************************************************/
+int main(void) {
+int  c, puncFlag;
+char puncMark[1];
+char *word1, *word2;
+char *text, *word;
+FILE *stream;
+pLink *headP;
+cLink *headC;
+ssize_t chrRead;
+size_t chrCount;
+    /******************************/
+    /* Poem linked list.          */
+    /******************************/
+    // Open hw8data.txt file.
+    if ((stream = fopen("./hw8data.txt", "r")) == NULL) {
+       printf("ERROR - hw8data.txt could not be opened.\n");
+       return 0;
+    }
+    // Initialize data head.
+    headP = NULL;							    
+    // Read hw8data.txt file.
+    while (1) {
+       text = NULL;
+       chrRead = getline(&text, &chrCount, stream);
+       if (feof(stream)) break;
+       word = strtok(text, " ");
+       LIST_INSERT_POEM(&headP,  word);  		// Insert word into linked list.
+       while (1) {
+          word = strtok(NULL, " \r\n");
+          if (word == NULL) break;
+          puncFlag = 0;
+          if (ispunct(word[strlen(word)-1])) {
+             puncMark[0] = word[strlen(word)-1];
+             puncMark[1] = '\0';
+             word[strlen(word)-1] = '\0';		// Replace puncuation mark with '\0'.
+             LIST_INSERT_POEM(&headP, word);	// Insert word into linked list.
+             LIST_INSERT_POEM(&headP, puncMark);// Insert puncuation mark into linked list.
+             puncFlag = 1;
+          }
+          if (puncFlag == 0) {
+             LIST_INSERT_POEM(&headP, word);	// Insert word into linked list.
+          }
+       }
+       free(text);
+    } 
+    text = NULL;
+    fclose(stream);
+    /******************************/
+    /* Codex linked list.         */
+    /******************************/ 
+    // Open hw8codex.txt file.
+    if ((stream = fopen("./hw8codex.txt", "r")) == NULL) {
+       printf("ERROR - hw8data.txt could not be opened.\n");
+       return 0;
+    }
+    // Initialize codex head.
+    headC = NULL;
+    // Read hw8codex.txt file.
+    while (1) {
+       text = NULL;
+       chrRead = getline(&text, &chrCount, stream);
+       if (feof(stream)) break;
+       word1 = strtok(text, " ");
+       word2 = strtok(NULL, "\n");
+       LIST_INSERT_CODEX(&headC, word1, word2); // Insert words into linked list.
+       free(text);
+    }
+    text = NULL;
+    fclose(stream);
+    /******************************/
+    /* Replace words in poem.     */
+    /******************************/
+    LIST_CORRECT(&headP, headC);
+    /******************************/
+    /* Display words in poem.     */
+    /******************************/
+    LIST_DISPLAY(headP);
+    /******************************/
+    /* Free linked lists.         */
+    /******************************/
+    LIST_FREE_POEM(headP);
+    LIST_FREE_CODEX(headC);
+
+    return 0;
+}
+
+
+
+

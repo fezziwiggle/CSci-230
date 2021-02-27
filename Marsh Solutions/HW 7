@@ -1,0 +1,157 @@
+/********************************************************/
+/* In this solution I pass the head by reference and by */
+/* value. Either case will work for either function. I  */
+/* Just wanted to show both methods in one solution.    */
+/********************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+struct node {
+   char name[42];
+   struct node *next;
+};
+
+typedef struct node LINK;	// In this case I opted to make the typedef all CAPS.
+
+/********************************************************/
+/* LIST_SEARCH.                                 	*/
+/********************************************************/
+int LIST_SEARCH(char name[], LINK *head) {
+LINK *current;
+   current = head;
+   while (current != NULL) {
+      if (!strcmp(current->name, name)) return 1; 	// Found it.
+      current = current->next;
+   }
+   return 0;						// Did not find it.
+}
+
+/********************************************************/
+/* LIST_INSERT.                                  	*/
+/* In this example I am passing the head by value and   */
+/* returning any change via the function return.        */
+/********************************************************/
+LINK *LIST_INSERT(char name[], LINK *head) {
+LINK *current, *temp;
+    // Does name already exist in list?
+    if (LIST_SEARCH(name, head) == 1) return head;	
+    // New name, so make space for it.
+    temp = (LINK *)malloc(sizeof(LINK));
+    strcpy(temp->name, name);
+    // Case 1: List is empty. Add to front.
+    if (head == NULL) {	
+//printf("Case 1: %s\n", name);
+       head        = temp;
+       temp->next  = NULL; 
+       return head;  
+    } 
+    // Case 2: Must add to front of list.
+    current = head;
+    if (strcmp(current->name, name) > 0) {	// strcmp can be used to compare strings.
+//printf("Case 2: %s\n", name);
+       temp->next  = current; 
+       head        = temp;
+       return head;  
+    } 
+    // Case 3: Add to end/middle of list.
+    current = head;
+    while (current != NULL) {
+       if (current->next == NULL || strcmp(current->next->name, name) > 0) {
+//printf("Case 3: %s\n", name);
+          temp->next    = current->next;
+          current->next = temp;
+          return head;  
+       }
+       current = current->next;
+    }
+}
+
+/********************************************************/
+/* DELETE LINKED-LIST.                                  */
+/* In this example I am passing the head by reference.  */
+/********************************************************/
+void LIST_DELETE(char name[], LINK *(*head)) {
+LINK *current, *temp;
+   // Does name exist in list?
+   if (LIST_SEARCH(name, (*head)) == 0) return;
+   current = (*head);
+   // Handle special case of first node removal.
+   if (!strcmp((*head)->name, name)) {	
+      current = current->next;
+      free((*head));
+      (*head) = current;
+   } else {
+   // Remainder of list removal.
+      while (current->next != NULL) {	
+          if (!strcmp(current->next->name, name)) {
+             temp = current->next;
+             current->next = current->next->next;
+             free(temp);
+             break;			// Since there will only be 1 instance.
+          }
+          current = current->next;
+      }
+   }
+}
+
+/********************************************************/
+/* DISPLAY LINKED-LIST.                                 */
+/********************************************************/
+void LIST_DISPLAY(LINK *head) {
+LINK *current;
+    current = head;
+    while (current != NULL) {
+        printf("%s\n", current->name);
+        current = current->next;
+    } 
+}
+
+/********************************************************/
+/* FREE LINKED-LIST.                                    */
+/* In this example I am passing the head by reference   */
+/* and returned in the change to HEAD via the function  */
+/* call.						*/
+/********************************************************/
+LINK *LIST_FREE(LINK *head) {
+LINK *current, *temp;
+    current = head;
+    while (current != NULL) {
+        temp    = current;
+        current = current->next;
+        free(temp);
+    }
+    free(head);
+    head = NULL;
+    return head;
+}
+
+/********************************************************/
+/* MAIN                                                 */
+/********************************************************/
+int main(void) {
+char action, name[42];
+FILE *stream;
+LINK *head;
+    // Initialize head.
+    head = NULL;
+    // Read data from file.
+    stream = fopen("hw8.data", "r");
+    while (1) {
+       fscanf(stream, "%s %c", name, &action);
+       if (feof(stream)) break;
+       if (action == 'a') {
+          head = LIST_INSERT(name, head);
+       } else if (action == 'd') {
+          LIST_DELETE(name, &head);
+       }
+    } 
+    fclose(stream);
+    // Display list.
+    LIST_DISPLAY(head);
+    // Free list.
+    head = LIST_FREE(head);
+    head = NULL;
+    return 0;
+}

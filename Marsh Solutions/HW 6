@@ -1,0 +1,252 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+ 
+#define null 666 // My version of NULL.
+
+struct directory {
+   char CircleName[42];
+   int  StartBlock;
+} Directory[10];     
+ 
+struct fat {
+   char Name[42];
+   char Number[8];
+   int  Next, Previous;
+} FAT[100];
+
+/*************************************************/
+/* Search directory for circle and (if required) */
+/* add the new entry into directory by looking   */
+/* for the first empty location in directory.    */
+/*************************************************/
+void ADD_TO_DIRECTORY(char circle[]) {
+int i;
+   // Search directory for current circle. Return if found.
+   for (i = 0; i < 10; i++) {
+       if (!strcmp(Directory[i].CircleName, circle)) return;
+   }
+   // Else add it to directory.
+   for (i = 0; i < 10; i++) {
+       if (strlen(Directory[i].CircleName) == 0) {
+          strcpy(Directory[i].CircleName, circle);
+          Directory[i].StartBlock = -1; // A flag meaning a new entry.
+          break;
+       }
+   }
+}
+
+/*************************************************/
+/* Find the matching circle in the Directory to  */
+/* find and return the FAT start point.          */
+/*************************************************/
+int FIND_FAT_START(char circle[], int *DirIndex) {
+int i;
+   for (i = 0; i < 10; i++) {
+       if (!strcmp(Directory[i].CircleName, circle)) {
+          *DirIndex = i;
+          return Directory[*DirIndex].StartBlock;
+       }
+   }
+   return -1;  // Search failed, most be new data.
+}
+
+/*************************************************/
+/* We first find the matching circle in the      */
+/* Directory to find the FAT start point.        */
+/* If this is data for a new circle, we  search  */
+/* the FAT for the first free location for the   */
+/* new data.                                     */
+/* If this is data for an existing circle, we    */
+/* search for he end of the list. Then we search */
+/* the entire FAT for a free location to put the */
+/* data. We also need to update both sets of next*/
+/* and previous "pointers."                      */
+/*************************************************/
+void ADD_TO_FAT(char circle[], char name[], char number[]) {
+int i, j;
+int FATStart;
+int dirIndex;
+   // Find entry in directory.
+   FATStart = FIND_FAT_START(circle, &dirIndex);
+   // If FATStart = -1, then this is new data for this circle.
+   if (FATStart == -1) {
+      for (i = 0; i < 100; i++) {
+          if (strlen(FAT[i].Name) == 0) {
+             Directory[dirIndex].StartBlock = i;
+             strcpy(FAT[i].Name, name);
+             strcpy(FAT[i].Number, number);
+             FAT[i].Next     = null; 		
+             FAT[i].Previous = 1000 + dirIndex;	// Anything over 1000 points back to directory.
+             break;
+          }
+      }
+   } else {
+      // The must be existing circle data, search to find end.
+      j = FATStart;
+      while (1) {
+          // Are we at end of circle?
+          if (FAT[j].Next == null) {
+             // Find new free slot.
+             for (i = 0; i < 100; i++) {
+                 if (strlen(FAT[i].Name) == 0) {
+                    strcpy(FAT[i].Name, name);
+                    strcpy(FAT[i].Number, number);
+                    FAT[i].Next     = null; 		
+                    FAT[i].Previous = j; // Point to previous.
+                    FAT[j].Next     = i; // Set last to point here.
+                    return;
+                 }
+             }
+          } else {
+             // Continue to next circle entry.
+             j = FAT[j].Next;
+          }
+      }
+   }
+}
+
+/*************************************************/
+/* We first find the matching circle in the      */
+/* Directory to find the FAT start point. We then*/
+/* search the FAT for the data to remove. We then*/
+/* update the next and previous "pointers." We   */
+/* also have to handle the special of deleting   */
+/* first circle entry as it points back to the   */
+/* directory.                                    */
+/*************************************************/
+void REMOVE_FROM_FAT(char circle[], char name[]) {
+int j, p, n;
+int FATStart;
+int dirIndex;
+   // Find entry in directory.
+   FATStart = FIND_FAT_START(circle, &dirIndex);
+   // If FATStart = -1, then this data would not be in circle.
+   if (FATStart == -1) return;
+   // Find and remove data.
+   j = FATStart;
+   while (1) {
+       // Check for match.
+       if (!strcmp(FAT[j].Name, name)) {
+          strcpy(FAT[j].Name, "");
+          strcpy(FAT[j].Number, "");
+          p = FAT[j].Previous;  
+          n = FAT[j].Next;   
+          // First entry (points back to directory)
+          if (p >= 1000) {
+             Directory[dirIndex].StartBlock = n;
+             // Anything over 1000 points back to directory.
+             if (n != 666) FAT[n].Previous = 1000 + dirIndex;	
+             else strcpy(Directory[dirIndex].CircleName, "");
+          } else {
+             // Set the previous entry to point to the next (skip over current).
+             FAT[p].Next = n; 
+             // Set the next entry to point to the prior (skip over current).
+             if (n != 666) FAT[n].Previous = p; 
+          }
+          return; 
+       } else {
+          // Continue to next circle entry.
+          j = FAT[j].Next;
+       }
+       // Search failed.
+       if (j == null) {
+          printf("ERROR - %s not foud in FAT.\n", name);
+          return;
+       }
+   }
+}
+
+/*************************************************/
+/* We first find the matching name in the FAT.    */
+/*************************************************/
+void DISPLAY_CIRCLE(char name[]) {
+int i;
+int current, next, previous;
+   // Search for name in FAT.
+   for (i = 0; i < 100; i++) {
+       if (!strcmp(FAT[i].Name, name)) {
+          current = i;
+          break;
+       }
+   }
+   // Trap if name not found.
+   if (i == 100) {
+      printf("ERROR - %s not foud in FAT.\n", name);
+      return;
+   }
+
+   // Trace from data back to directory.
+   previous = FAT[current].Previous;
+   while (1) {
+      previous = FAT[previous].Previous;
+      // Have we completed traceback?
+      if (previous >= 1000) {
+         printf("Circle name is: %s\n", Directory[previous-1000].CircleName);
+         break;
+      }
+   }
+   // Trace from directory through circle data in FAT.
+   next = Directory[previous-1000].StartBlock;
+   while (1) {
+      printf("Member name & number are: %s %s\n", FAT[next].Name, FAT[next].Number);
+      next = FAT[next].Next;
+      // Have we completed trace?
+      if (next == null) break;
+   }
+   printf("\n");
+}
+
+/*************************************************/
+/* Main                                          */
+/*************************************************/
+int main(void) {
+int  i;
+char circle[42], name[42], action;
+char  number[8];
+int  circleFound;
+FILE *data;
+   // Open data file.
+   data = fopen("hw6.data", "r");
+   if (data == NULL) {
+      printf("ERROR - No input file.\n");
+      exit(0);
+   }
+   // Read data file.
+   while (1) {
+      fscanf(data, "%s %s %s %c", circle, name, number, &action);
+      if (feof(data)) break;
+      // Process action.
+      if (action == 'a') {
+         // Add to Directory (if required).
+         ADD_TO_DIRECTORY(circle);
+         // Add to FAT.
+         ADD_TO_FAT(circle, name, number);
+      } else if (action == 'd') {
+         // Remove data from FAT.
+         REMOVE_FROM_FAT(circle, name);
+      }
+      else if (action == 'q') {
+         // Display all members of circle.
+         DISPLAY_CIRCLE(name);
+      }
+   }
+   // Print Directory contents.
+   printf("DIRECTORY\n");
+   for (i = 0; i < 10; i++) {
+       if (strcmp(Directory[i].CircleName, "")) {
+          printf("%d\t%s\t\t%d\n", i, Directory[i].CircleName, Directory[i].StartBlock);
+       }
+   }
+   printf("\n");
+   // Print FAT contents.
+   printf("FAT\n");
+   for (i = 0; i < 100; i++) {
+       if (strcmp(FAT[i].Name, "")) {
+          printf("%d\t%s\t%s\t%d\t%d\n", i, FAT[i].Name, FAT[i].Number, FAT[i].Previous, FAT[i].Next);
+       }
+   }
+   return 0;
+}
+ 
+

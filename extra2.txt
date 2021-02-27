@@ -1,0 +1,96 @@
+//Maezy Haldeman: maezy.haldeman@und.edu
+//CSCI 230: Extra Credit 2
+
+/****************************************************/
+/* Test cases:                                      */
+/* 12345 & abcde                                    */
+/* 1234567890123456789012345678901234567890 & abcde */
+/* 12345 & abcdefghijkhlmnoqrst                     */
+/****************************************************/
+
+string1[5], string2[15];
+
+A) - B) Test case 1: 12345 & abcde 
+
+Output: 12345
+		abcde 
+
+Test case 2: 1234567890123456789012345678901234567890 & abcde
+
+Output: 1234567890123456789012345678901234567890
+		abcde 
+		Segmentation fault (core dumped)  //this tells us that the array on the top of the stack overflowed, and the cause was string1[5]
+
+Test case 3: 12345 & abcdefghijkhlmnoqrst
+
+Output: oqrst                //this tells us the string2[15] array is on the bottom of the stack
+		abcdefghijkhlmnoqrst
+					
+
+C) Test case 3 shows string2[15] is on the bottom of the stack, so string1[5] is on the top of the stack.
+
+
+D) The string1[5] array allocates space for 12 characters. Testing string1[5] with 123456789012 (12 characters) works, but testing with 1234567890123 (13 characters) causes a segfault.
+		
+The string2[15] array allocates space for 14 characters. Testing string2[15] with 12345678901234 (14 characters) works and will not cause string2 to overflow into string1 above it in the stack, but testing 123456789012345 (15 characters) causes the terminating character in string2 to overflow into string1.
+
+
+
+string1[5], string2[1];
+
+A) - B) Test case 1: 12345 & abcde 
+
+Output: bcde
+		abcde
+
+Test case 2: 1234567890123456789012345678901234567890 & abcde
+	
+Output: bcde
+		abcde
+		Segmentation fault (core dumped)
+
+Test case 3: 12345 & abcdefghijkhlmnoqrst
+
+Output: bcdefghijkhlmnoqrst
+		abcdefghijkhlmnoqrst
+		Segmentation fault (core dumped)
+
+
+C) All three test cases show that string2 overflows into string1, so the string1[5] array is on the top of the stack.
+
+D) The string1[5] array is big enough to hold 12 characters.
+
+The string2[1] array is big enough to hold 0 characters. Testing any input for string2 that is 1 character long causes the terminating character in string2 to overflow into string1. Testing any input longer than 1 character for string2 will cause the second character and subsequent characters to overflow into string1.
+
+
+
+string1[5], string2[17];
+
+A) - B) Test case 1: 12345 & abcde 
+
+Output: 12345
+		abcde
+
+Test case 2: 1234567890123456789012345678901234567890 & abcde
+
+Output: 1234567890123456789012345678901234567890
+		abcde
+		Segmentation fault (core dumped)
+
+Test case 3: 12345 & abcdefghijkhlmnoqrst
+
+Output: 12345
+		abcdefghijkhlmnoqrst
+
+
+C) Test case 2 shows that string1 is the array that overflowed and caused the segfault, so the string1[5] is on the top of the stack.
+
+D) String1[5] is big enough to hold 12 characters.
+	   
+String2[17] is big enough to hold 26 characters. Testing string2 with 12345678901234567890123456 (26 characters) works and doesn't cause string2 to overflow into string1. Testing string2 with 123456789012345678901234567 (27 characters) causes the terminating character in string2 to overflow into string1.
+
+
+
+
+
+
